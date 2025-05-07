@@ -18,7 +18,7 @@ int closed = 0;
 void list_hunts(){
     pid_t pid = fork();
     if (pid==0){
-        char *arg[] = {"./treasure_manager", "list_hunts", NULL};
+        char *arg[] = {"./treasure_manager", "--list_hunts", NULL};
         execvp(arg[0],arg);
         perror("error listing hunts");
         exit(-1);
