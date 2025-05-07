@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <dirent.h>
 
 #define USER_LENGTH 30
 #define CLUE_LENGTH 200
@@ -25,7 +26,7 @@ typedef struct{
 
 void logging(const char *hunt_id, const char *message){
     char s[256];
-    sprintf(s, "%s-%s", hunt_id, LOG_FILE);
+    sprintf(s, "%s/%s", hunt_id, LOG_FILE);
     int fd = open(s, O_WRONLY | O_CREAT | O_APPEND, 0777);
     if (fd == -1){
         perror("error opening file");
@@ -48,7 +49,7 @@ void add(const char *hunt_id){
     }
 
     char s[256];
-    sprintf(s, "%s - %s", hunt_id, TREASURE_FILE);
+    sprintf(s, "%s/%s", hunt_id, TREASURE_FILE);
     int fd = open (s, O_WRONLY | O_CREAT | O_APPEND, 0777);
     if (fd == -1){
         perror("error opening file");
@@ -96,7 +97,7 @@ void add(const char *hunt_id){
     close(fd);
     logging(hunt_id, "Added treasure");
     char s1[256], s2[256];
-    sprintf(s1, "%s - %s", hunt_id, LOG_FILE);
+    sprintf(s1, "%s/%s", hunt_id, LOG_FILE);
     sprintf(s2, "logged - %s", hunt_id);
     unlink(s2);
 
@@ -106,10 +107,36 @@ void add(const char *hunt_id){
     }
 }
 
+void list_hunts(){
+    DIR *dir = opendir(".");
+    if (!dir){
+        perror("error opening directory");
+        exit(-1);
+    }
+    struct dirent *i;
+    while ((i=readdir(dir))!=NULL){
+        if(i->d_type == DT_DIR && i->d_name[0] != '.'){
+            char aux[512];
+            snprintf(aux, sizeof(aux), "%s/%s", i->d_name, TREASURE_FILE);
+            int fd = open(aux, O_RDONLY);
+            if (fd == -1)
+                continue;
+            struct stat s;
+            if (fstat(fd, &s) == -1){
+                close(fd);
+                continue;
+            }
+            int c = s.st_size / sizeof(Treasure);
+            printf("%s: %d treasures\n", i->d_name, c);
+            close(fd);
+        }
+    }
+    closedir(dir);
+}
 
 void list(const char *hunt_id){
     char s[256];
-    sprintf(s, "%s - %s", hunt_id, TREASURE_FILE);
+    sprintf(s, "%s/%s", hunt_id, TREASURE_FILE);
     int fd = open(s, O_RDONLY);
 
     if (fd == -1){
@@ -139,7 +166,7 @@ void list(const char *hunt_id){
 
 void view(const char *hunt_id, int treasure_id){
     char s[256];
-    sprintf(s, "%s - %s", hunt_id, TREASURE_FILE);
+    sprintf(s, "%s/%s", hunt_id, TREASURE_FILE);
     int fd = open(s, O_RDONLY);
 
     if (fd == -1){
@@ -165,7 +192,7 @@ void view(const char *hunt_id, int treasure_id){
 
 void remove_treasure(const char *hunt_id, int treasure_id){
     char s[256];
-    sprintf(s, "%s - %s", hunt_id, TREASURE_FILE);
+    sprintf(s, "%s/%s", hunt_id, TREASURE_FILE);
     int fd = open(s, O_RDWR);
 
     if (fd == -1){
@@ -209,9 +236,9 @@ void remove_treasure(const char *hunt_id, int treasure_id){
 
 void remove_hunt(const char *hunt_id){
     char s[256];
-    sprintf(s, "%s - %s", hunt_id, TREASURE_FILE);
+    sprintf(s, "%s/%s", hunt_id, TREASURE_FILE);
     unlink(s);
-    sprintf(s, "%s - %s", hunt_id, LOG_FILE);
+    sprintf(s, "%s/%s", hunt_id, LOG_FILE);
     unlink(s);
     rmdir(hunt_id);
     char s2[256];
@@ -224,6 +251,7 @@ void remove_hunt(const char *hunt_id){
 void usage(){
     printf("Usage:\n");
     printf("--add <hunt_id>\n");
+    printf("--list_hunts\n");
     printf("--list <hunt_id>\n");
     printf("--view <hunt_id> <treasure_id>\n");
     printf("--remove_treasure <hunt_id> <treasure_id>\n");
@@ -232,7 +260,7 @@ void usage(){
 
 
 int main(int argc, char **argv){
-    if (argc < 3){
+    if (argc < 2){
         usage();
         exit(-1);
     }
@@ -259,6 +287,10 @@ int main(int argc, char **argv){
 
     else if (strcmp(argv[1], "--remove_hunt") == 0)
         remove_hunt(argv[2]);
+
+    else if (strcmp(argv[1], "--list_hunts") == 0)
+        list_hunts();
+
     else{
         usage();
         exit(-1);
