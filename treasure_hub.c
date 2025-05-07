@@ -89,6 +89,10 @@ void start_monitor(){
     }
 }
 
+void wait_stop(){
+    
+}
+
 int main(){
     char action[256];
     int running = 0;
@@ -97,10 +101,14 @@ int main(){
         monitor_run = 0;
         if (!monitor_pid)
             process();
+        printf("action: ");
         scanf("%255s", action);
         if(strcmp(action, "start_monitor")==0){
-            start_monitor();
-            running = 1;
+            if (!monitor_run){
+                start_monitor();
+                running = 1;
+                printf("monitor has started\n");
+            }
         }
         else if (strcmp(action, "list_hunts")==0){
             if(kill(monitor_pid, SIGUSR1) < 0){
