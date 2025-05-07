@@ -5,57 +5,62 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/types.h>
-#include <fcntl.h>
 
 /*SIGUSR1 - list_hunts
 SIGUSR2 - list_treasures
 SIGINT - view_treasure
 SIGTERM - stop_monitor
-SIGHUP - closed_monitor
+SIGCHLD - closed_monitor
 */
 pid_t monitor_pid = 1;
 int closed = 0;
 
 void list_hunts(){
-    char *arg[] = {"./treasure_manager", "list_hunts", NULL};
-    if (execvp(arg[0],arg) == -1){
+    pid_t pid = fork();
+    if (pid==0){
+        char *arg[] = {"./treasure_manager", "list_hunts", NULL};
+        execvp(arg[0],arg);
         perror("error listing hunts");
         exit(-1);
     }
 }
 
 void list_treasures(){
-    char aux[256];
-    scanf("%255s", aux);
-    char *arg[] = {"./treasure_manager", "list", aux, NULL};
-    if (execvp(arg[0],arg) == -1){
+    pid_t pid = fork();
+    if (pid==0){
+        char aux[256];
+        scanf("%255s", aux);
+        char *arg[] = {"./treasure_manager", "--list", aux, NULL};
+        execvp(arg[0],arg);
         perror("error listing treasures");
         exit(-1);
     }
 }
 
 void view_treasure(){
-    printf("hunt: ");
-    char hunt[256];
-    scanf("%255s", hunt);
-    printf("treasure: ");
-    char treasure[256];
-    scanf("%255s", treasure);
-    char *arg[] = {"./treasure_manager", "view_treasure", hunt, treasure, NULL};
-    if (execvp(arg[0],arg) == -1){
+    pid_t pid = fork();
+    if (pid==0){
+        printf("hunt: ");
+        char hunt[256];
+        scanf("%255s", hunt);
+        printf("treasure: ");
+        char treasure[256];
+        scanf("%255s", treasure);
+        char *arg[] = {"./treasure_manager", "view_treasure", hunt, treasure, NULL};
+        execvp(arg[0],arg);
         perror("error viewing treasure");
         exit(-1);
     }
 }
 
 void stop_monitor(){
-    usleep(10);
+    sleep(10);
     exit(0);
 }
 
 void process(){
     struct sigaction act;
-    memset(&act, 0x00, sizeof(struct sigaction));
+    memset(&act, 0, sizeof(struct sigaction));
     act.sa_handler = list_hunts;
     if (sigaction(SIGUSR1, &act, NULL) == -1){
         perror("error sending SIGUSR1");
@@ -84,6 +89,10 @@ void start_monitor(){
         perror("error creating process");
         exit(-1);
     }
+    else if (monitor_pid == 0){
+        process();
+        exit(0);
+    }
 }
 
 void closed_monitor(){
@@ -91,31 +100,30 @@ void closed_monitor(){
 }
 
 void wait_stop(){
-    char aux[256];
-    while (!closed){
-        scanf("%255s", aux);
-        if (closed)
-            break;
-        printf("monitor closed");
-    }
+   while(!closed)
+    sleep(1);
 }
 
 int main(){
     char action[256];
     int running = 0, status = 0;
+
+    printf("actions: start_monitor, list_hunts, list_treasures, view_treasure, stop_monitor\n");
+
     struct sigaction act;
-    memset(&act,0x00,sizeof(struct sigaction));
+    memset(&act,0,sizeof(struct sigaction));
     act.sa_handler = closed_monitor;
-    if (sigaction(SIGHUP,&act,NULL)<0){
-        perror("error sending SIGHUP");
+    if (sigaction(SIGCHLD,&act,NULL)<0){
+        perror("error sending SIGCHLD");
         exit(-1);
     }
     while(1){
         closed = 0;
-        if (!monitor_pid)
+        if (monitor_pid==0)
             process();
         printf("action: ");
         scanf("%255s", action);
+
         if(strcmp(action, "start_monitor")==0){
             if (!running){
                 start_monitor();
@@ -124,30 +132,31 @@ int main(){
             else
                 printf("monitor is running\n");
         }
+
         else if (strcmp(action, "list_hunts")==0){
             if(kill(monitor_pid, SIGUSR1) < 0){
                 perror("error sending SIGUSR1");
                 exit(-1);
             }
             wait(&status);
-            start_monitor();
         }
+
         else if (strcmp(action, "list_treasures")==0){
             if(kill(monitor_pid, SIGUSR2) < 0){
                 perror("error sending SIGUSR2");
                 exit(-1);
             }
             wait(&status);
-            start_monitor();
         }
+
         else if(strcmp(action, "view_treasure")==0){
             if(kill(monitor_pid, SIGINT) < 0){
                 perror("error sending SIGINT");
                 exit(-1);
             }
             wait(&status);
-            start_monitor();
         }
+
         else if(strcmp(action, "stop_monitor")==0){
             running=0;
             if(kill(monitor_pid, SIGTERM) < 0){
@@ -158,12 +167,14 @@ int main(){
             wait(&status);
             printf("termination status: %d\n", status);
         }
+
         else if (strcmp(action, "exit")==0){
             if (running)
                 printf("The monitor is running\n");
             else
                 break;
         }
+
         else
             printf("actions: start_monitor, list_hunts, list_treasures, view_treasure, stop_monitor\n");
     }
