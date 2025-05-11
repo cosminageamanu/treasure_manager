@@ -5,6 +5,9 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 /*SIGUSR1 - list_hunts
 SIGUSR2 - list_treasures
@@ -12,8 +15,19 @@ SIGINT - view_treasure
 SIGTERM - stop_monitor
 SIGCHLD - closed_monitor
 */
+
+int pfd[2];
 pid_t monitor_pid = 1;
 int closed = 0;
+
+void output(){
+    char aux[512];
+    int n = read(pfd[0], aux, sizeof(aux)-1);
+    if (n>0){
+        aux[n]='\0';
+        printf("output: %s\n", aux);
+    }
+}
 
 void list_hunts(){
     pid_t pid = fork();
@@ -23,6 +37,7 @@ void list_hunts(){
         perror("error listing hunts");
         exit(-1);
     }
+    output();
 }
 
 void list_treasures(){
@@ -35,6 +50,7 @@ void list_treasures(){
         perror("error listing treasures");
         exit(-1);
     }
+    output();
 }
 
 void view_treasure(){
@@ -51,6 +67,7 @@ void view_treasure(){
         perror("error viewing treasure");
         exit(-1);
     }
+    output();
 }
 
 void stop_monitor(){
@@ -85,13 +102,35 @@ void process(){
 }
 
 void start_monitor(){
+    int cmd[2];
+    if (pipe(cmd)<0){
+        perror("error creating pipe");
+        exit(-1);
+    }
+    if (pipe(pfd)<0){
+        perror("error creating pipe");
+        exit(-1);
+    }
     if ((monitor_pid=fork())<0){
         perror("error creating process");
         exit(-1);
     }
     else if (monitor_pid == 0){
-        process();
-        exit(0);
+        close(cmd[1]);
+        dup2(pfd[1], 1);
+        close(pfd[0]);
+        close(pfd[1]);
+        dup2(cmd[0], 0);
+        close(cmd[0]);
+        //exit(0);
+        while (1) pause();
+    }
+    else{
+        closed = 0;
+        close(cmd[0]);
+        close(pfd[1]);
+        pfd[1] = cmd[1];
+        printf("Monitor started with pid: %d\n", monitor_pid);
     }
 }
 
