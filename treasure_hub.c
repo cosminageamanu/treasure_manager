@@ -70,6 +70,10 @@ void view_treasure(){
     output();
 }
 
+void calculate_score(){
+
+}
+
 void stop_monitor(){
     sleep(10);
     exit(0);
