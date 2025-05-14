@@ -33,6 +33,7 @@ void list_hunts(){
     pid_t pid = fork();
     if (pid==0){
         char *arg[] = {"./treasure_manager", "--list_hunts", NULL};
+        dup2(pfd[1], 1);
         execvp(arg[0],arg);
         perror("error listing hunts");
         exit(0);
@@ -46,6 +47,7 @@ void list_treasures(){
         char aux[256];
         scanf("%255s", aux);
         char *arg[] = {"./treasure_manager", "--list", aux, NULL};
+        dup2(pfd[1],1);
         execvp(arg[0],arg);
         perror("error listing treasures");
         exit(0);
@@ -63,6 +65,7 @@ void view_treasure(){
         char treasure[256];
         scanf("%255s", treasure);
         char *arg[] = {"./treasure_manager", "view_treasure", hunt, treasure, NULL};
+        dup2(pfd[1],1);
         execvp(arg[0],arg);
         perror("error viewing treasure");
         exit(0);
@@ -123,15 +126,15 @@ void start_monitor(){
     else if (monitor_pid == 0){
         close(pfd[0]);
         dup2(pfd[1], 1);
-        execlp("ls", "ls", "-l", NULL);
+        /*execlp("ls", "ls", "-l", NULL);
         perror(NULL);
-        exit(-1);
+        exit(-1);*/
     }
     else
         printf("Monitor started with pid: %d\n", monitor_pid);
     close(pfd[1]);
-    FILE *f = fdopen(pfd[0], "r");
-    fscanf(f, "%255s", string);
+    //FILE *f = fdopen(pfd[0], "r"); - open
+    //fscanf(f, "%255s", string); - read
     close(pfd[0]);
 }
 

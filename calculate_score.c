@@ -24,12 +24,19 @@ typedef struct{
 }Score_t;
 
 void calculate_score(){
+    int value = 0, score = 0;
+    char path[100];
     char s[256];
-    int fd = open(s, O_RDONLY);
+    int fd = open(path, O_RDONLY);
     if (fd == -1){
         perror("error opening file");
         exit(-1);
     }
+    while(read(fd, path, sizeof(path)-1)){
+        value = atoi(path+96);
+        score+=value;
+    }
+    printf("")
 
 }
 
