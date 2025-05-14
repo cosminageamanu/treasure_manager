@@ -35,7 +35,7 @@ void list_hunts(){
         char *arg[] = {"./treasure_manager", "--list_hunts", NULL};
         execvp(arg[0],arg);
         perror("error listing hunts");
-        exit(-1);
+        exit(0);
     }
     output();
 }
@@ -48,7 +48,7 @@ void list_treasures(){
         char *arg[] = {"./treasure_manager", "--list", aux, NULL};
         execvp(arg[0],arg);
         perror("error listing treasures");
-        exit(-1);
+        exit(0);
     }
     output();
 }
@@ -65,14 +65,19 @@ void view_treasure(){
         char *arg[] = {"./treasure_manager", "view_treasure", hunt, treasure, NULL};
         execvp(arg[0],arg);
         perror("error viewing treasure");
-        exit(-1);
+        exit(0);
     }
     output();
 }
 
-void calculate_score(){
-
-}
+/*void calculate_score(){
+    char s[256];
+    int fd = open(s, O_RDONLY);
+    if (fd == -1){
+        perror("error opening file");
+        exit(-1);
+    }
+}*/
 
 void stop_monitor(){
     sleep(10);
@@ -106,11 +111,7 @@ void process(){
 }
 
 void start_monitor(){
-    int cmd[2];
-    if (pipe(cmd)<0){
-        perror("error creating pipe");
-        exit(-1);
-    }
+    char string[256];
     if (pipe(pfd)<0){
         perror("error creating pipe");
         exit(-1);
@@ -120,22 +121,18 @@ void start_monitor(){
         exit(-1);
     }
     else if (monitor_pid == 0){
-        close(cmd[1]);
-        dup2(pfd[1], 1);
         close(pfd[0]);
-        close(pfd[1]);
-        dup2(cmd[0], 0);
-        close(cmd[0]);
-        //exit(0);
-        while (1) pause();
+        dup2(pfd[1], 1);
+        execlp("ls", "ls", "-l", NULL);
+        perror(NULL);
+        exit(-1);
     }
-    else{
-        closed = 0;
-        close(cmd[0]);
-        close(pfd[1]);
-        pfd[1] = cmd[1];
+    else
         printf("Monitor started with pid: %d\n", monitor_pid);
-    }
+    close(pfd[1]);
+    FILE *f = fdopen(pfd[0], "r");
+    fscanf(f, "%255s", string);
+    close(pfd[0]);
 }
 
 void closed_monitor(){

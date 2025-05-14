@@ -23,19 +23,53 @@ typedef struct{
     int score;
 }Score_t;
 
+void calculate_score(){
+    char s[256];
+    int fd = open(s, O_RDONLY);
+    if (fd == -1){
+        perror("error opening file");
+        exit(-1);
+    }
+
+}
+
 int main(int argc, char* argv[]){
     if (argc != 2){
         perror(NULL);
         exit(-1);
     }
-    char text[256];
+    DIR *dir = opendir(".");
+    if (!dir){
+        perror("error opening directory");
+        exit(-1);
+    }
+    struct dirent *i;
+    while ((i=readdir(dir))!=NULL){
+        if(i->d_type == DT_DIR && i->d_name[0] != '.'){
+            char aux[512];
+            snprintf(aux, sizeof(aux), "%s/%s", i->d_name, TREASURE_FILE);
+            int fd = open(aux, O_RDONLY);
+            if (fd == -1)
+                continue;
+            struct stat s;
+            if (fstat(fd, &s) == -1){
+                close(fd);
+                continue;
+            }
+           /* int c = s.st_size / sizeof(Treasure);
+            printf("%s: %d treasures\n", i->d_name, c);
+            close(fd);
+        }*/
+    }
+    closedir(dir);
+    char text[512];
     sprintf(text, "%s/%s", argv[1], TREASURE_FILE);
-    int fd = open(text, O_RDONLY);
+    /*int fd = open(text, O_RDONLY);
     if (fd==-1){
         perror("error opening file");
         exit(-1);
     }
 
-    close(fd);
+    close(fd);*/
     return 0;
 }
