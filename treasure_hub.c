@@ -216,7 +216,14 @@ int main(){
                 break;
         }
         else if (strcmp(action, "calculate_score") == 0){
-
+            pid_t pid = fork();
+            if (pid==0){
+                execl("./calculate_score", "calculate_score", ".", NULL);
+                perror("exec error");
+                exit(-1);
+            }
+            else
+                wait(NULL);
         }
 
         else

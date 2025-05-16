@@ -26,12 +26,10 @@ typedef struct{
     int score;
 }Score_t;
 
-void calculate_score(){
+void calculate_score(const char *path){
     Treasure_t t;
     Score_t scores[100];
     int count = 0;
-    char path[100] = "game1";
-    //char s[256];
     int fd = open(path, O_RDONLY);
     if (fd == -1){
         perror("error opening file");
@@ -59,7 +57,7 @@ void calculate_score(){
 }
 
 int main(int argc, char* argv[]){
-    if (argc != 2){
+    if (argc != 3){
         perror(NULL);
         exit(-1);
     }
@@ -89,6 +87,7 @@ int main(int argc, char* argv[]){
     closedir(dir);
     char text[512];
     sprintf(text, "%s/%s", argv[1], TREASURE_FILE);
+    calculate_score(text);
     int fd = open(text, O_RDONLY);
     if (fd==-1){
         perror("error opening file");
