@@ -73,15 +73,6 @@ void view_treasure(){
     output();
 }
 
-/*void calculate_score(){
-    char s[256];
-    int fd = open(s, O_RDONLY);
-    if (fd == -1){
-        perror("error opening file");
-        exit(-1);
-    }
-}*/
-
 void stop_monitor(){
     sleep(10);
     exit(0);
@@ -113,8 +104,15 @@ void process(){
     while(1);
 }
 
+void calculate_score(){
+    char* arg[] = {"./calculate_score", "calculate_score", NULL};
+    execvp(arg[0], arg);
+    perror("exec error");
+    exit(-1);
+}
+
 void start_monitor(){
-    char string[256];
+    //char string[256];
     if (pipe(pfd)<0){
         perror("error creating pipe");
         exit(-1);
@@ -151,7 +149,7 @@ int main(){
     char action[256];
     int running = 0, status = 0;
 
-    printf("actions: start_monitor, list_hunts, list_treasures, view_treasure, stop_monitor\n");
+    //printf("actions: start_monitor, list_hunts, list_treasures, view_treasure, stop_monitor\n");
 
     struct sigaction act;
     memset(&act,0,sizeof(struct sigaction));
@@ -216,6 +214,9 @@ int main(){
                 printf("The monitor is running\n");
             else
                 break;
+        }
+        else if (strcmp(action, "calculate_score") == 0){
+
         }
 
         else
